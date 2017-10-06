@@ -25,17 +25,18 @@ public class ProcExample {
                         case CHAR64: outputColumn.appendChar(inputColumn.getChar(k)); break;
                         case CHAR128: outputColumn.appendChar(inputColumn.getChar(k)); break;
                         case CHAR256: outputColumn.appendChar(inputColumn.getChar(k)); break;
-                        case DATE: outputColumn.appendInt(inputColumn.getInt(k)); break;
-                        case DECIMAL: outputColumn.appendLong(inputColumn.getLong(k)); break;
+                        case DATE: outputColumn.appendCalendar(inputColumn.getCalendar(k)); break;
+                        case DATETIME: outputColumn.appendCalendar(inputColumn.getCalendar(k)); break;
+                        case DECIMAL: outputColumn.appendBigDecimal(inputColumn.getBigDecimal(k)); break;
                         case DOUBLE: outputColumn.appendDouble(inputColumn.getDouble(k)); break;
                         case FLOAT: outputColumn.appendFloat(inputColumn.getFloat(k)); break;
                         case INT: outputColumn.appendInt(inputColumn.getInt(k)); break;
                         case INT8: outputColumn.appendByte(inputColumn.getByte(k)); break;
                         case INT16: outputColumn.appendShort(inputColumn.getShort(k)); break;
-                        case IPV4: outputColumn.appendInt(inputColumn.getInt(k)); break;
+                        case IPV4: outputColumn.appendInet4Address(inputColumn.getInet4Address(k)); break;
                         case LONG: outputColumn.appendLong(inputColumn.getLong(k)); break;
                         case STRING: outputColumn.appendVarString(inputColumn.getVarString(k)); break;
-                        case TIME: outputColumn.appendInt(inputColumn.getInt(k)); break;
+                        case TIME: outputColumn.appendCalendar(inputColumn.getCalendar(k)); break;
                         case TIMESTAMP: outputColumn.appendLong(inputColumn.getLong(k)); break;
                     }
                 }

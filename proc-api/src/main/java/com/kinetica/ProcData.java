@@ -1,5 +1,9 @@
 package com.kinetica;
 
+import java.math.BigDecimal;
+import java.net.InetAddress;
+import java.net.Inet4Address;
+import java.net.UnknownHostException;
 import java.nio.charset.StandardCharsets;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
@@ -26,6 +30,7 @@ public class ProcData {
         CHAR128  (0x0800000),
         CHAR256  (0x1000000),
         DATE     (0x2000000),
+        DATETIME (0x0000200),
         DECIMAL  (0x8000000),
         DOUBLE   (0x0000010),
         FLOAT    (0x0000020),
@@ -71,6 +76,7 @@ public class ProcData {
                     case CHAR128:   type.size = 128; break;
                     case CHAR256:   type.size = 256; break;
                     case DATE:      type.size = 4; break;
+                    case DATETIME:  type.size = 8; break;
                     case DECIMAL:   type.size = 8; break;
                     case DOUBLE:    type.size = 8; break;
                     case FLOAT:     type.size = 4; break;
@@ -94,6 +100,7 @@ public class ProcData {
 
     public static class Column {
         private static final SimpleDateFormat DATE_FORMAT;
+        private static final SimpleDateFormat DATETIME_FORMAT;
         private static final SimpleDateFormat TIME_FORMAT;
         protected static final TimeZone UTC;
 
@@ -103,6 +110,8 @@ public class ProcData {
             calendar.setGregorianChange(new Date(Long.MIN_VALUE));
             DATE_FORMAT = new SimpleDateFormat("yyyy-MM-dd");
             DATE_FORMAT.setCalendar(calendar);
+            DATETIME_FORMAT = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss.SSS");
+            DATETIME_FORMAT.setCalendar(calendar);
             TIME_FORMAT = new SimpleDateFormat("HH:mm:ss.SSS");
             TIME_FORMAT.setCalendar(calendar);
         }
@@ -174,6 +183,30 @@ public class ProcData {
             }
         }
 
+        public BigDecimal getBigDecimal(long index) {
+            if (type != ColumnType.DECIMAL) {
+                throw new IllegalStateException("Incompatible data type");
+            }
+
+            if (isNull(index)) {
+                return null;
+            } else {
+                return new BigDecimal(data.readLong(index * 8)).movePointLeft(4);
+            }
+        }
+
+        public Byte getByte(long index) {
+            if (type != ColumnType.INT8) {
+                throw new IllegalStateException("Incompatible data type");
+            }
+
+            if (isNull(index)) {
+                return null;
+            } else {
+                return data.readByte(index);
+            }
+        }
+
         public Calendar getCalendar(long index) {
             switch (type) {
                 case DATE:
@@ -185,8 +218,26 @@ public class ProcData {
                         result.setGregorianChange(new Date(Long.MIN_VALUE));
                         result.clear();
                         result.set(1900 + (value >> 21),
-                                (value >> 17) & 0b1111 - 1,
+                                ((value >> 17) & 0b1111) - 1,
                                 (value >> 12) & 0b11111);
+                        return result;
+                    }
+
+                case DATETIME:
+                    if (isNull(index)) {
+                        return null;
+                    } else {
+                        long value = data.readLong(index * 8);
+                        GregorianCalendar result = new GregorianCalendar(UTC);
+                        result.setGregorianChange(new Date(Long.MIN_VALUE));
+                        result.clear();
+                        result.set(1900 + (int)(value >> 53),
+                                (int)((value >> 49) & 0b1111) - 1,
+                                (int)((value >> 44) & 0b11111),
+                                (int)((value >> 39) & 0b11111),
+                                (int)((value >> 33) & 0b111111),
+                                (int)((value >> 27) & 0b111111));
+                        result.set(Calendar.MILLISECOND, (int)((value >> 17) & 0b1111111111));
                         return result;
                     }
 
@@ -201,7 +252,7 @@ public class ProcData {
                         result.set(Calendar.HOUR_OF_DAY, (value >> 26));
                         result.set(Calendar.MINUTE, (value >> 20) & 0b111111);
                         result.set(Calendar.SECOND, (value >> 14) & 0b111111);
-                        result.add(Calendar.MILLISECOND, (value >> 4) & 0b1111111111);
+                        result.set(Calendar.MILLISECOND, (value >> 4) & 0b1111111111);
                         return result;
                     }
 
@@ -261,6 +312,29 @@ public class ProcData {
             }
         }
 
+        public Inet4Address getInet4Address(long index) {
+            if (type != ColumnType.IPV4) {
+                throw new IllegalStateException("Incompatible data type");
+            }
+
+            if (isNull(index)) {
+                return null;
+            } else {
+                int value = data.readInt(index * 4);
+                byte[] buffer = new byte[4];
+                buffer[0] = (byte)((value & 0xFF000000) >> 24);
+                buffer[1] = (byte)((value & 0x00FF0000) >> 16);
+                buffer[2] = (byte)((value & 0x0000FF00) >> 8);
+                buffer[3] = (byte)((value & 0x000000FF));
+
+                try {
+                    return (Inet4Address)InetAddress.getByAddress(buffer);
+                } catch (UnknownHostException ex) {
+                    throw new IllegalStateException(ex.getMessage());
+                }
+            }
+        }
+
         public Integer getInt(long index) {
             switch (type) {
                 case DATE:
@@ -280,32 +354,9 @@ public class ProcData {
             }
         }
 
-        public Byte getByte(long index) {
-            if (type != ColumnType.INT8) {
-                throw new IllegalStateException("Incompatible data type");
-            }
-
-            if (isNull(index)) {
-                return null;
-            } else {
-                return data.readByte(index);
-            }
-        }
-
-        public Short getShort(long index) {
-            if (type != ColumnType.INT16) {
-                throw new IllegalStateException("Incompatible data type");
-            }
-
-            if (isNull(index)) {
-                return null;
-            } else {
-                return data.readShort(index * 2);
-            }
-        }
-
         public Long getLong(long index) {
             switch (type) {
+                case DATETIME:
                 case DECIMAL:
                 case LONG:
                 case TIMESTAMP:
@@ -319,6 +370,18 @@ public class ProcData {
                 return null;
             } else {
                 return data.readLong(index * 8);
+            }
+        }
+
+        public Short getShort(long index) {
+            if (type != ColumnType.INT16) {
+                throw new IllegalStateException("Incompatible data type");
+            }
+
+            if (isNull(index)) {
+                return null;
+            } else {
+                return data.readShort(index * 2);
             }
         }
 
@@ -393,26 +456,14 @@ public class ProcData {
                     case CHAR128: return getChar(index);
                     case CHAR256: return getChar(index);
                     case DATE: return DATE_FORMAT.format(getCalendar(index).getTime());
-                    case DECIMAL: return getLong(index).toString();
+                    case DATETIME: return DATETIME_FORMAT.format(getCalendar(index).getTime());
+                    case DECIMAL: return getBigDecimal(index).toString();
                     case DOUBLE: return getDouble(index).toString();
                     case FLOAT: return getFloat(index).toString();
                     case INT: return getInt(index).toString();
                     case INT8: return getByte(index).toString();
                     case INT16: return getShort(index).toString();
-
-                    case IPV4: {
-                        int value = getInt(index);
-                        StringBuilder builder = new StringBuilder();
-                        builder.append(value >> 24);
-                        builder.append('.');
-                        builder.append((value >> 16) & 0xff);
-                        builder.append('.');
-                        builder.append((value >> 8) & 0xff);
-                        builder.append('.');
-                        builder.append(value & 0xff);
-                        return builder.toString();
-                    }
-
+                    case IPV4: return getInet4Address(index).getHostAddress();
                     case LONG: return getLong(index).toString();
                     case STRING: return getVarString(index);
                     case TIME: return TIME_FORMAT.format(getCalendar(index).getTime());
@@ -465,6 +516,26 @@ public class ProcData {
             }
         }
 
+        public void setBigDecimal(long index, BigDecimal value) {
+            if (type != ColumnType.DECIMAL) {
+                throw new IllegalStateException("Incompatible data type");
+            }
+
+            if (!handleNull(index, value)) {
+                data.writeLong(index * 8, value.movePointRight(4).longValueExact());
+            }
+        }
+
+        public void setByte(long index, Byte value) {
+            if (type != ColumnType.INT8) {
+                throw new IllegalStateException("Incompatible data type");
+            }
+
+            if (!handleNull(index, value)) {
+                data.writeByte(index, value);
+            }
+        }
+
         public void setCalendar(long index, Calendar value) {
             switch (type) {
                 case DATE:
@@ -479,6 +550,22 @@ public class ProcData {
                     }
 
                     break;
+
+                case DATETIME:
+                    if (!handleNull(index, value)) {
+                        GregorianCalendar newValue = new GregorianCalendar(UTC);
+                        newValue.setGregorianChange(new Date(Long.MIN_VALUE));
+                        newValue.setTimeInMillis(value.getTimeInMillis());
+                        data.writeLong(index * 8,
+                                (((long)newValue.get(Calendar.YEAR) - 1900) << 53)
+                                | (((long)newValue.get(Calendar.MONTH) + 1) << 49)
+                                | ((long)newValue.get(Calendar.DAY_OF_MONTH) << 44)
+                                | ((long)newValue.get(Calendar.HOUR_OF_DAY) << 39)
+                                | ((long)newValue.get(Calendar.MINUTE) << 33)
+                                | ((long)newValue.get(Calendar.SECOND) << 27)
+                                | ((long)newValue.get(Calendar.MILLISECOND) << 17));
+                        break;
+                    }
 
                 case TIME:
                     if (!handleNull(index, value)) {
@@ -543,6 +630,17 @@ public class ProcData {
             }
         }
 
+        public void setInet4Address(long index, Inet4Address value) {
+            if (type != ColumnType.IPV4) {
+                throw new IllegalStateException("Incompatible data type");
+            }
+
+            if (!handleNull(index, value)) {
+                byte[] buffer = value.getAddress();
+                data.writeInt(index * 4, buffer[0] << 24 | buffer[1] << 16 | buffer[2] << 8 | buffer[3]);
+            }
+        }
+
         public void setInt(long index, Integer value) {
             switch (type) {
                 case DATE:
@@ -560,13 +658,20 @@ public class ProcData {
             }
         }
 
-        public void setByte(long index, Byte value) {
-            if (type != ColumnType.INT8) {
-                throw new IllegalStateException("Incompatible data type");
+        public void setLong(long index, Long value) {
+            switch (type) {
+                case DATETIME:
+                case DECIMAL:
+                case LONG:
+                case TIMESTAMP:
+                    break;
+
+                default:
+                    throw new IllegalStateException("Incompatible data type");
             }
 
             if (!handleNull(index, value)) {
-                data.writeByte(index, value);
+                data.writeLong(index * 8, value);
             }
         }
 
@@ -580,20 +685,18 @@ public class ProcData {
             }
         }
 
-        public void setLong(long index, Long value) {
-            switch (type) {
-                case DECIMAL:
-                case LONG:
-                case TIMESTAMP:
-                    break;
+        public long appendBigDecimal(BigDecimal value) {
+            long index = pos;
+            setBigDecimal(pos, value);
+            pos++;
+            return index;
+        }
 
-                default:
-                    throw new IllegalStateException("Incompatible data type");
-            }
-
-            if (!handleNull(index, value)) {
-                data.writeLong(index * 8, value);
-            }
+        public long appendByte(Byte value) {
+            long index = pos;
+            setByte(pos, value);
+            pos++;
+            return index;
         }
 
         public long appendCalendar(Calendar value) {
@@ -624,6 +727,13 @@ public class ProcData {
             return index;
         }
 
+        public long appendInet4Address(Inet4Address value) {
+            long index = pos;
+            setInet4Address(pos, value);
+            pos++;
+            return index;
+        }
+
         public long appendInt(Integer value) {
             long index = pos;
             setInt(pos, value);
@@ -631,9 +741,9 @@ public class ProcData {
             return index;
         }
 
-        public long appendByte(Byte value) {
+        public long appendLong(Long value) {
             long index = pos;
-            setByte(pos, value);
+            setLong(pos, value);
             pos++;
             return index;
         }
@@ -641,13 +751,6 @@ public class ProcData {
         public long appendShort(Short value) {
             long index = pos;
             setShort(pos, value);
-            pos++;
-            return index;
-        }
-
-        public long appendLong(Long value) {
-            long index = pos;
-            setLong(pos, value);
             pos++;
             return index;
         }
