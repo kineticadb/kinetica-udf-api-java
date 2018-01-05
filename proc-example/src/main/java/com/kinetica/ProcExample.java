@@ -4,15 +4,18 @@ public class ProcExample {
     public static void main(String[] args) {
         ProcData procData = ProcData.get();
 
+        // Loop through input and output tables (assume the same number)
         for (int i = 0; i < procData.getInputData().getTableCount(); i++) {
             ProcData.InputTable inputTable = procData.getInputData().getTable(i);
             ProcData.OutputTable outputTable = procData.getOutputData().getTable(i);
             outputTable.setSize(inputTable.getSize());
 
+            // Loop through columns in the input and output tables (assume the same number and types)
             for (int j = 0; j < inputTable.getColumnCount(); j++) {
                 ProcData.InputColumn inputColumn = inputTable.getColumn(j);
                 ProcData.OutputColumn outputColumn = outputTable.getColumn(j);
 
+                // For each record, copy the data from the input column to the output column
                 for (long k = 0; k < inputTable.getSize(); k++) {
                     switch (inputColumn.getType()) {
                         case BYTES: outputColumn.appendVarBytes(inputColumn.getVarBytes(k)); break;
@@ -43,8 +46,11 @@ public class ProcExample {
             }
         }
 
+        // Copy any parameters from the input parameter map into the output results map (not necessary for table copying, just for illustrative purposes)
         procData.getResults().putAll(procData.getParams());
         procData.getBinResults().putAll(procData.getBinParams());
+
+        // Inform Kinetica that the proc has finished successfully
         procData.complete();
     }
 }
