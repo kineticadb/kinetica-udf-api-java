@@ -28,6 +28,7 @@ final class MemoryMappedFile extends Pointer {
 
     @NoException public native long getSize();
     @NoException public native long getPos();
+    public native void seek(long pos);
 
     public Map<String, byte[]> readBinaryMap(Map<String, byte[]> result) {
         long length = readLong();
@@ -170,4 +171,6 @@ final class MemoryMappedFile extends Pointer {
     @NoException public native void writeCharN(long pos, byte[] value, long length, long size);
 
     public native void truncate();
+    public native void lock(boolean exclusive);
+    public native void unlock();
 }

@@ -12,6 +12,7 @@
 #include <stdexcept>
 #include <string>
 #include <unistd.h>
+#include <sys/file.h>
 #include <sys/mman.h>
 #include <sys/stat.h>
 
@@ -137,6 +138,12 @@ class MemoryMappedFile
             return m_pos;
         }
 
+        void seek(const std::size_t pos)
+        {
+            ensure(pos - m_pos);
+            m_pos = pos;
+        }
+
         template<typename T>
         const T& read()
         {
@@ -230,6 +237,42 @@ class MemoryMappedFile
         void truncate()
         {
             remap(m_pos);
+        }
+
+        void lock(const bool exclusive)
+        {
+            if (m_file == -1)
+            {
+                throw std::runtime_error("File not mapped");
+            }
+
+            int operation = exclusive ? LOCK_EX : LOCK_SH;
+
+            int err;
+
+            do
+            {
+                err = flock(m_file, operation);
+            }
+            while (err != 0 && errno == EINTR);
+
+            if (err != 0)
+            {
+                throw std::runtime_error("Could not lock file: " + std::string(std::strerror(errno)));
+            }
+        }
+
+        void unlock()
+        {
+            if (m_file == -1)
+            {
+                return;
+            }
+
+            if (flock(m_file, LOCK_UN) != 0)
+            {
+                throw std::runtime_error("Could not unlock file: " + std::string(std::strerror(errno)));
+            }
         }
 
     private:

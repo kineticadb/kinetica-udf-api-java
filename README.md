@@ -23,7 +23,7 @@ install the jar in the local repository:
 > mvn install
 
 
-The documentation can be found at http://www.kinetica.com/docs/6.1/index.html.
+The documentation can be found at http://www.kinetica.com/docs/6.2/index.html.
 UDF-specifid specific documentation can be found at:
 
 *   http://www.kinetica.com/docs/concepts/index.html#user-defined-functions

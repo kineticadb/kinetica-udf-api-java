@@ -1014,6 +1014,8 @@ public class ProcData {
     private Map<String, String> results;
     private Map<String, byte[]> binResults;
     private OutputDataSet outputData;
+    private String status;
+    private MemoryMappedFile statusFile;
 
     private ProcData() {
         String controlFileName = System.getenv("KINETICA_PCF");
@@ -1027,7 +1029,7 @@ public class ProcData {
 
         long version = controlFile.readLong();
 
-        if (version != 1) {
+        if (version != 1 && version != 2) {
             throw new RuntimeException("Unrecognized control file version: " + Long.toString(version));
         }
 
@@ -1039,6 +1041,12 @@ public class ProcData {
         inputData = new InputDataSet(controlFile);
         outputData = new OutputDataSet(controlFile);
         outputControlFileName = controlFile.readString();
+
+        if (version == 2) {
+            statusFile = new MemoryMappedFile();
+            statusFile.map(controlFile.readString(), true, -1);
+        }
+
         results = new HashMap<>();
         binResults = new HashMap<>();
     }
@@ -1069,6 +1077,25 @@ public class ProcData {
 
     public OutputDataSet getOutputData() {
         return outputData;
+    }
+
+    public String getStatus() {
+        return status;
+    }
+
+    public void setStatus(String value) {
+        status = value;
+
+        if (statusFile != null) {
+            statusFile.lock(true);
+
+            try {
+                statusFile.seek(0);
+                statusFile.writeString(value);
+            } finally {
+                statusFile.unlock();
+            }
+        }
     }
 
     public void complete() {
