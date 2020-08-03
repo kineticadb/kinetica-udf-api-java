@@ -7,7 +7,7 @@ example project.
 proc-api
 --------
 
-In the proc-api directory, run the following command in the api direcotry to
+In the proc-api directory, run the following command in the api directory to
 create the API JAR:
 
 > mvn clean package
@@ -23,10 +23,10 @@ install the jar in the local repository:
 > mvn install
 
 
-The documentation can be found at http://www.kinetica.com/docs/7.0/index.html.
-UDF-specifid specific documentation can be found at:
+The documentation can be found at http://www.kinetica.com/docs/7.1/index.html.
+UDF-specific documentation can be found at:
 
-*   http://www.kinetica.com/docs/concepts/index.html#user-defined-functions
+*   http://www.kinetica.com/docs/7.1/concepts/index.html#user-defined-functions
 
 
 

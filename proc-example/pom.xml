@@ -3,14 +3,14 @@
     <modelVersion>4.0.0</modelVersion>
     <groupId>com.kinetica</groupId>
     <artifactId>kinetica-proc-example</artifactId>
-    <version>7.0.0.0</version>
+    <version>7.1.0.0</version>
     <packaging>jar</packaging>
     <name>Kinetica Proc Example</name>
     <dependencies>
         <dependency>
             <groupId>com.kinetica</groupId>
             <artifactId>kinetica-proc-api</artifactId>
-            <version>7.0.0.0</version>
+            <version>7.1.0.0</version>
         </dependency>
     </dependencies>
     <build>
