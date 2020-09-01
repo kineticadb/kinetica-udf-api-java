@@ -14,7 +14,8 @@ create the API JAR:
 
 Note that due to native components this must be run on Linux with the same
 architecture as the Kinetica servers on which the UDFs will be used and a
-compatible glibc version.
+compatible glibc version (do not try to run it on any Windows machine, you 
+get the following error: `fatal error C1189: #error:  Due to native components, the Kinetica Proc API can only be compiled on Linux.`).
 
 
 In order to use the API JAR for the example, run the following command to
