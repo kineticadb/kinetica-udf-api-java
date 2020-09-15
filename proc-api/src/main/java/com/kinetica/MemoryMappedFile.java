@@ -121,6 +121,7 @@ final class MemoryMappedFile extends Pointer {
 
         for (Map.Entry<String, byte[]> entry : value.entrySet()) {
             writeString(entry.getKey());
+            writeLong(entry.getValue().length);
             write(entry.getValue(), entry.getValue().length);
         }
     }
