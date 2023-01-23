@@ -24,10 +24,10 @@ install the jar in the local repository:
 > mvn install
 
 
-The documentation can be found at http://www.kinetica.com/docs/7.1/index.html.
+The documentation can be found at https://docs.kinetica.com/7.1/.
 UDF-specific documentation can be found at:
 
-*   http://www.kinetica.com/docs/7.1/concepts/index.html#user-defined-functions
+*   https://docs.kinetica.com/7.1/concepts/index.html#user-defined-functions
 
 
 
@@ -43,15 +43,15 @@ To build the jar, run the following command in the proc-example directory:
 > mvn clean package
 
 
-This will produce a jar, kinetica-proc-example-1.0-jar-with-dependencies.jar,
+This will produce a jar, kinetica-proc-example-7.1-jar-with-dependencies.jar,
 in the target directory. This jar can be uploaded to Kinetica via the gadmin
 UDF tab by clicking "New" and using the following parameters:
 
 *    Name: proc-example (or as desired)
 *    Command: java
 *    Argument 1: -jar
-*    Argument 2: kinetica-proc-example-1.0-jar-with-dependencies.jar
-*    Files: kinetica-proc-example-1.0-jar-with-dependencies.jar
+*    Argument 2: kinetica-proc-example-7.1-jar-with-dependencies.jar
+*    Files: kinetica-proc-example-7.1-jar-with-dependencies.jar
 
 
 Once uploaded, the proc can be executed via gadmin.

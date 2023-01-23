@@ -3,16 +3,36 @@
     <modelVersion>4.0.0</modelVersion>
     <groupId>com.kinetica</groupId>
     <artifactId>kinetica-proc-example</artifactId>
-    <version>7.1.0.1</version>
+    <version>7.1</version>
     <packaging>jar</packaging>
     <name>Kinetica Proc Example</name>
+    <properties>
+        <udf-api.version>7.1.0.2</udf-api.version>
+        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+        <maven.compiler.source>1.8</maven.compiler.source>
+        <maven.compiler.target>1.8</maven.compiler.target>
+        <target.build.dir>target</target.build.dir> <!-- override on cmd-line -->
+    </properties>
     <dependencies>
         <dependency>
             <groupId>com.kinetica</groupId>
             <artifactId>kinetica-proc-api</artifactId>
-            <version>7.1.0.1</version>
+            <version>${udf-api.version}</version>
         </dependency>
     </dependencies>
+    <profiles>
+        <profile>
+            <id>ConfigureTargetBuildDir</id>
+            <activation>
+                <property>
+                    <name>target.build.dir</name>
+                </property>
+            </activation>
+            <build>
+                <directory>${target.build.dir}</directory>
+            </build>
+        </profile>
+    </profiles>
     <build>
         <plugins>
             <plugin>
@@ -47,9 +67,4 @@
             </plugin>
         </plugins>
     </build>
-    <properties>
-        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-        <maven.compiler.source>1.7</maven.compiler.source>
-        <maven.compiler.target>1.7</maven.compiler.target>
-    </properties>
 </project>
