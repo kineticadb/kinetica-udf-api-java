@@ -2,6 +2,12 @@
 
 ## Version 7.1
 
+### Version 7.1.0.2 - 2023-01-23
+
+-   Improved thread-safety of date/time type handling
+-   Added support for BOOLEAN data type
+-   Added support for ULONG and UUID data types
+
 ### Version 7.1.0.1 - 2020-09-15
 
 #### Fixed

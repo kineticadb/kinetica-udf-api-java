@@ -1,11 +1,13 @@
 package com.kinetica;
 
 import java.math.BigDecimal;
+import java.math.BigInteger;
 import java.net.InetAddress;
 import java.net.Inet4Address;
 import java.net.UnknownHostException;
+import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
-import java.text.SimpleDateFormat;
+import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.Collections;
@@ -16,32 +18,36 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.TimeZone;
+import java.util.UUID;
 
 public class ProcData {
     public static enum ColumnType {
-        BYTES    (0x0000002),
-        CHAR1    (0x0080000),
-        CHAR2    (0x0100000),
-        CHAR4    (0x0001000),
-        CHAR8    (0x0002000),
-        CHAR16   (0x0004000),
-        CHAR32   (0x0200000),
-        CHAR64   (0x0400000),
-        CHAR128  (0x0800000),
-        CHAR256  (0x1000000),
-        DATE     (0x2000000),
-        DATETIME (0x0000200),
-        DECIMAL  (0x8000000),
-        DOUBLE   (0x0000010),
-        FLOAT    (0x0000020),
-        INT      (0x0000040),
-        INT8     (0x0020000),
-        INT16    (0x0040000),
-        IPV4     (0x0008000),
-        LONG     (0x0000080),
-        STRING   (0x0000001),
-        TIME     (0x4000000),
-        TIMESTAMP(0x0010000);
+        BOOLEAN  (0x20000000),
+        BYTES    (0x00000002),
+        CHAR1    (0x00080000),
+        CHAR2    (0x00100000),
+        CHAR4    (0x00001000),
+        CHAR8    (0x00002000),
+        CHAR16   (0x00004000),
+        CHAR32   (0x00200000),
+        CHAR64   (0x00400000),
+        CHAR128  (0x00800000),
+        CHAR256  (0x01000000),
+        DATE     (0x02000000),
+        DATETIME (0x00000200),
+        DECIMAL  (0x08000000),
+        DOUBLE   (0x00000010),
+        FLOAT    (0x00000020),
+        INT      (0x00000040),
+        INT8     (0x00020000),
+        INT16    (0x00040000),
+        IPV4     (0x00008000),
+        LONG     (0x00000080),
+        STRING   (0x00000001),
+        TIME     (0x04000000),
+        TIMESTAMP(0x00010000),
+        ULONG    (0x00000800),
+        UUID     (0x00000008);
 
         private final int value;
         private int size;
@@ -65,6 +71,7 @@ public class ProcData {
         static {
             for (ColumnType type : ColumnType.values()) {
                 switch (type) {
+                    case BOOLEAN:   type.size = 1; break;
                     case BYTES:     type.size = 8; break;
                     case CHAR1:     type.size = 1; break;
                     case CHAR2:     type.size = 2; break;
@@ -88,6 +95,8 @@ public class ProcData {
                     case STRING:    type.size = 8; break;
                     case TIME:      type.size = 4; break;
                     case TIMESTAMP: type.size = 8; break;
+                    case ULONG:     type.size = 8; break;
+                    case UUID:      type.size = 16; break;
                     default: throw new IllegalStateException("Invalid data type");
                 }
             }
@@ -99,21 +108,18 @@ public class ProcData {
     }
 
     public static class Column {
-        private static final SimpleDateFormat DATE_FORMAT;
-        private static final SimpleDateFormat DATETIME_FORMAT;
-        private static final SimpleDateFormat TIME_FORMAT;
+        private static final DateTimeFormatter DATE_FORMAT;
+        private static final DateTimeFormatter DATETIME_FORMAT;
+        private static final DateTimeFormatter TIME_FORMAT;
         protected static final TimeZone UTC;
 
         static {
             UTC = TimeZone.getTimeZone("UTC");
             GregorianCalendar calendar = new GregorianCalendar(UTC);
             calendar.setGregorianChange(new Date(Long.MIN_VALUE));
-            DATE_FORMAT = new SimpleDateFormat("yyyy-MM-dd");
-            DATE_FORMAT.setCalendar(calendar);
-            DATETIME_FORMAT = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss.SSS");
-            DATETIME_FORMAT.setCalendar(calendar);
-            TIME_FORMAT = new SimpleDateFormat("HH:mm:ss.SSS");
-            TIME_FORMAT.setCalendar(calendar);
+            DATE_FORMAT = DateTimeFormatter.ofPattern("yyyy-MM-dd").withZone(UTC.toZoneId());
+            DATETIME_FORMAT = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss.SSS").withZone(UTC.toZoneId());
+            TIME_FORMAT = DateTimeFormatter.ofPattern("HH:mm:ss.SSS").withZone(UTC.toZoneId());
         }
 
         protected final String name;
@@ -192,6 +198,48 @@ public class ProcData {
                 return null;
             } else {
                 return new BigDecimal(data.readLong(index * 8)).movePointLeft(4);
+            }
+        }
+
+        public BigInteger getBigInteger(long index) {
+            switch (type) {
+                case LONG:
+                    if (isNull(index)) {
+                        return null;
+                    } else {
+                        return BigInteger.valueOf(data.readLong(index * 8));
+                    }
+
+                case ULONG:
+                    if (isNull(index)) {
+                        return null;
+                    } else {
+                        long value = data.readLong(index * 8);
+
+                        if (value < 0) {
+                            ByteBuffer buffer = ByteBuffer.allocate(8);
+                            buffer.putLong(value);
+                            byte[] bytes = buffer.array();
+                            return new BigInteger(1, bytes);
+                        } else {
+                            return BigInteger.valueOf(value);
+                        }
+                    }
+
+                default:
+                    throw new IllegalStateException("Incompatible data type");
+            }
+        }
+
+        public Boolean getBoolean(long index) {
+            if (type != ColumnType.BOOLEAN) {
+                throw new IllegalStateException("Incompatible data type");
+            }
+
+            if (isNull(index)) {
+                return null;
+            } else {
+                return data.readByte(index) == 0 ? false : true;
             }
         }
 
@@ -360,6 +408,7 @@ public class ProcData {
                 case DECIMAL:
                 case LONG:
                 case TIMESTAMP:
+                case ULONG:
                     break;
 
                 default:
@@ -382,6 +431,18 @@ public class ProcData {
                 return null;
             } else {
                 return data.readShort(index * 2);
+            }
+        }
+
+        public UUID getUUID(long index) {
+            if (type != ColumnType.UUID) {
+                throw new IllegalStateException("Incompatible data type");
+            }
+
+            if (isNull(index)) {
+                return null;
+            } else {
+                return new UUID(data.readLong(index * 16 + 8), data.readLong(index * 16));
             }
         }
 
@@ -436,6 +497,8 @@ public class ProcData {
                 return "";
             } else {
                 switch (type) {
+                    case BOOLEAN: return getBoolean(index).toString();
+
                     case BYTES: {
                         Formatter formatter = new Formatter();
 
@@ -455,8 +518,8 @@ public class ProcData {
                     case CHAR64: return getChar(index);
                     case CHAR128: return getChar(index);
                     case CHAR256: return getChar(index);
-                    case DATE: return DATE_FORMAT.format(getCalendar(index).getTime());
-                    case DATETIME: return DATETIME_FORMAT.format(getCalendar(index).getTime());
+                    case DATE: return DATE_FORMAT.format(getCalendar(index).getTime().toInstant());
+                    case DATETIME: return DATETIME_FORMAT.format(getCalendar(index).getTime().toInstant());
                     case DECIMAL: return getBigDecimal(index).toString();
                     case DOUBLE: return getDouble(index).toString();
                     case FLOAT: return getFloat(index).toString();
@@ -466,8 +529,10 @@ public class ProcData {
                     case IPV4: return getInet4Address(index).getHostAddress();
                     case LONG: return getLong(index).toString();
                     case STRING: return getVarString(index);
-                    case TIME: return TIME_FORMAT.format(getCalendar(index).getTime());
+                    case TIME: return TIME_FORMAT.format(getCalendar(index).getTime().toInstant());
                     case TIMESTAMP: return getLong(index).toString();
+                    case ULONG: return getBigInteger(index).toString();
+                    case UUID: return getUUID(index).toString();
                     default: throw new IllegalStateException("Invalid data type");
                 }
             }
@@ -523,6 +588,26 @@ public class ProcData {
 
             if (!handleNull(index, value)) {
                 data.writeLong(index * 8, value.movePointRight(4).longValueExact());
+            }
+        }
+
+        public void setBigInteger(long index, BigInteger value) {
+            if (type != ColumnType.LONG && type != ColumnType.ULONG) {
+                throw new IllegalStateException("Incompatible data type");
+            }
+
+            if (!handleNull(index, value)) {
+                data.writeLong(index * 8, value.longValue());
+            }
+        }
+
+        public void setBoolean(long index, Boolean value) {
+            if (type != ColumnType.BOOLEAN) {
+                throw new IllegalStateException("Incompatible data type");
+            }
+
+            if (!handleNull(index, value)) {
+                data.writeByte(index, value ? (byte)1 : (byte)0);
             }
         }
 
@@ -664,6 +749,7 @@ public class ProcData {
                 case DECIMAL:
                 case LONG:
                 case TIMESTAMP:
+                case ULONG:
                     break;
 
                 default:
@@ -685,9 +771,34 @@ public class ProcData {
             }
         }
 
+        public void setUUID(long index, UUID value) {
+            if (type != ColumnType.UUID) {
+                throw new IllegalStateException("Incompatible data type");
+            }
+
+            if (!handleNull(index, value)) {
+                data.writeLong(index * 16, value.getLeastSignificantBits());
+                data.writeLong(index * 16 + 8, value.getMostSignificantBits());
+            }
+        }
+
         public long appendBigDecimal(BigDecimal value) {
             long index = pos;
             setBigDecimal(pos, value);
+            pos++;
+            return index;
+        }
+
+        public long appendBigInteger(BigInteger value) {
+            long index = pos;
+            setBigInteger(pos, value);
+            pos++;
+            return index;
+        }
+
+        public long appendBoolean(Boolean value) {
+            long index = pos;
+            setBoolean(pos, value);
             pos++;
             return index;
         }
@@ -751,6 +862,13 @@ public class ProcData {
         public long appendShort(Short value) {
             long index = pos;
             setShort(pos, value);
+            pos++;
+            return index;
+        }
+
+        public long appendUUID(UUID value) {
+            long index = pos;
+            setUUID(pos, value);
             pos++;
             return index;
         }
