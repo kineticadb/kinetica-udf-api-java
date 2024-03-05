@@ -3,11 +3,11 @@
     <modelVersion>4.0.0</modelVersion>
     <groupId>com.kinetica</groupId>
     <artifactId>kinetica-proc-example</artifactId>
-    <version>7.1</version>
+    <version>7.2</version>
     <packaging>jar</packaging>
     <name>Kinetica Proc Example</name>
     <properties>
-        <udf-api.version>7.1.0.2</udf-api.version>
+        <udf-api.version>7.2.0.0</udf-api.version>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <maven.compiler.source>1.8</maven.compiler.source>
         <maven.compiler.target>1.8</maven.compiler.target>

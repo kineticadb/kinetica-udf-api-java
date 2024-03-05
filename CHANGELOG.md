@@ -1,5 +1,12 @@
 # GPUdb Java UDF API Changelog
 
+## Version 7.2
+
+## Version 7.2.0.0 - 2024-03-04
+
+-   Version release
+
+
 ## Version 7.1
 
 ### Version 7.1.0.2 - 2023-01-23
@@ -29,11 +36,6 @@
 ## Version 6.2
 
 ### Version 6.2.0.0 - 2018-02-11
--   Version release
-
-
-## Version 6.2.0 - 2018-02-11
-
 -   Version release
 
 
