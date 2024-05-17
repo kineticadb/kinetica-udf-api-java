@@ -7,7 +7,7 @@
     <packaging>jar</packaging>
     <name>Kinetica Proc Example</name>
     <properties>
-        <udf-api.version>7.1.0.2</udf-api.version>
+        <udf-api.version>7.1.0.3</udf-api.version>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <maven.compiler.source>1.8</maven.compiler.source>
         <maven.compiler.target>1.8</maven.compiler.target>
