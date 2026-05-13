@@ -1,5 +1,5 @@
 <h3 align="center" style="margin:0px">
-	<img width="200" src="https://www.kinetica.com/wp-content/uploads/2018/08/kinetica_logo.svg" alt="Kinetica Logo"/>
+	<img width="200" src="https://kinetica-web-assets.s3.us-east-1.amazonaws.com/assets/kinetica_logo_gray.svg" alt="Kinetica Logo"/>
 </h3>
 <h5 align="center" style="margin:0px">
 	<a href="https://www.kinetica.com/">Website</a>
@@ -80,7 +80,7 @@ in the `target` directory. This JAR can be uploaded to Kinetica via the GAdmin
   * **1**: `-jar`
   * **2**: `kinetica-proc-example-7.2-jar-with-dependencies.jar`
 
-* **Files**: `kinetica-proc-example-7.1-jar-with-dependencies.jar`
+* **Files**: `kinetica-proc-example-7.2-jar-with-dependencies.jar`
 
 Once uploaded, the UDF can be executed via GAdmin.
 
